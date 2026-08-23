@@ -1,0 +1,2986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>DigitScope — Deriv Digit Analyzer</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+:root{
+    --bg:#050b10;
+    --panel:#0a141c;
+    --panel2:#0d1b24;
+    --border:#1a303b;
+    --text:#edf7f8;
+    --muted:#78909d;
+    --green:#18e39d;
+    --red:#ff5265;
+    --blue:#4ba7ff;
+    --yellow:#e9c65d;
+}
+
+body{
+    margin:0;
+    background:
+        radial-gradient(
+            circle at 50% -20%,
+            #12303b 0,
+            #071018 38%,
+            #050b10 75%
+        );
+    color:var(--text);
+    font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
+}
+
+.app{
+    min-height:100vh;
+    display:grid;
+    grid-template-columns:220px 1fr;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+    background:#061018;
+    border-right:1px solid var(--border);
+    padding:18px 12px;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:900;
+    padding:8px 12px 25px;
+}
+
+.logo span{
+    color:var(--green);
+}
+
+.nav{
+    display:grid;
+    gap:5px;
+}
+
+.nav button{
+    background:transparent;
+    border:0;
+    color:#8197a4;
+    text-align:left;
+    padding:12px;
+    border-radius:7px;
+    cursor:pointer;
+}
+
+.nav button:hover,
+.nav button.active{
+    background:#102631;
+    color:#fff;
+}
+
+.sidebar-note{
+    margin:35px 10px;
+    color:#607681;
+    font-size:10px;
+    line-height:1.6;
+}
+
+/* MAIN */
+
+.main{
+    min-width:0;
+}
+
+.header{
+    height:64px;
+    border-bottom:1px solid var(--border);
+    background:#07121a;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 20px;
+}
+
+.header-title{
+    font-weight:800;
+}
+
+.connection{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    color:var(--muted);
+}
+
+.connection-dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:#ffb020;
+}
+
+.connection-dot.online{
+    background:var(--green);
+    box-shadow:0 0 12px var(--green);
+}
+
+/* WORKSPACE */
+
+.workspace{
+    padding:16px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 350px;
+    gap:15px;
+}
+
+.panel{
+    background:rgba(10,20,28,.94);
+    border:1px solid var(--border);
+    border-radius:10px;
+}
+
+.panel-padding{
+    padding:15px;
+}
+
+/* TOP CONTROLS */
+
+.controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.control,
+select,
+input{
+    background:#07131b;
+    color:#fff;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:10px;
+}
+
+button{
+    font-family:inherit;
+}
+
+button.control{
+    cursor:pointer;
+}
+
+/* MARKET */
+
+.market{
+    margin-top:14px;
+}
+
+.market-head{
+    padding:14px;
+    display:flex;
+    justify-content:space-between;
+    border-bottom:1px solid var(--border);
+}
+
+.price{
+    font-size:23px;
+    font-weight:900;
+}
+
+.canvas{
+    display:block;
+    width:100%;
+    height:200px;
+}
+
+/* DIGIT ANALYZER */
+
+.analyzer{
+    margin-top:14px;
+    padding:16px;
+}
+
+.analyzer-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+}
+
+.title{
+    font-weight:900;
+}
+
+.subtitle{
+    color:var(--muted);
+    font-size:11px;
+    margin-top:4px;
+}
+
+.sample{
+    color:var(--green);
+    font-weight:800;
+}
+
+/* DIGITS */
+
+.digit-grid{
+    position:relative;
+    display:grid;
+    grid-template-columns:
+        repeat(10,1fr);
+    gap:8px;
+    padding-top:12px;
+}
+
+.digit-item{
+    position:relative;
+    min-width:0;
+    text-align:center;
+}
+
+.circle{
+    width:64px;
+    height:64px;
+    margin:auto;
+
+    border-radius:50%;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
+    background:
+        radial-gradient(
+            circle,
+            #13242d,
+            #09141b
+        );
+
+    border:2px solid #31505d;
+
+    position:relative;
+
+    transition:
+        transform .16s ease,
+        border-color .16s ease,
+        box-shadow .16s ease;
+}
+
+.circle .number{
+    font-size:20px;
+    font-weight:900;
+}
+
+.circle .percentage{
+    font-size:10px;
+    color:#a9bdc6;
+    margin-top:2px;
+}
+
+/* MOST */
+
+.digit-item.most .circle{
+    border-color:var(--green);
+
+    box-shadow:
+        0 0 20px
+        rgba(24,227,157,.30);
+
+    background:
+        radial-gradient(
+            circle,
+            #123d31,
+            #091812
+        );
+}
+
+/* LEAST */
+
+.digit-item.least .circle{
+    border-color:var(--red);
+
+    box-shadow:
+        0 0 20px
+        rgba(255,82,101,.28);
+
+    background:
+        radial-gradient(
+            circle,
+            #401822,
+            #160b0f
+        );
+}
+
+/* MIDDLE */
+
+.digit-item.middle .circle{
+    border-color:#426170;
+}
+
+/* MOVING CURSOR */
+
+.cursor-line{
+    position:absolute;
+    top:0;
+    left:0;
+
+    width:64px;
+    height:88px;
+
+    pointer-events:none;
+
+    transition:
+        left .18s
+        cubic-bezier(.25,.8,.25,1);
+}
+
+.cursor-ring{
+    width:74px;
+    height:74px;
+
+    position:absolute;
+
+    top:-5px;
+    left:-5px;
+
+    border-radius:50%;
+
+    border:
+        2px solid
+        rgba(75,167,255,.95);
+
+    box-shadow:
+        0 0 15px
+        rgba(75,167,255,.65);
+
+    animation:
+        cursorPulse 1s infinite;
+}
+
+.cursor-dot{
+    width:7px;
+    height:7px;
+
+    position:absolute;
+
+    top:32px;
+    left:28px;
+
+    background:#fff;
+    border-radius:50%;
+
+    box-shadow:
+        0 0 12px
+        #fff;
+}
+
+@keyframes cursorPulse{
+
+    0%,100%{
+        transform:scale(.96);
+        opacity:.7;
+    }
+
+    50%{
+        transform:scale(1.04);
+        opacity:1;
+    }
+
+}
+
+/* FREQUENCY BAR */
+
+.frequency-bar{
+    margin-top:18px;
+    height:8px;
+    background:#07131b;
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid var(--border);
+}
+
+.frequency-fill{
+    height:100%;
+    width:0%;
+    background:
+        linear-gradient(
+            90deg,
+            var(--red),
+            #7c91a0,
+            var(--green)
+        );
+    transition:.25s;
+}
+
+/* HISTORY */
+
+.history{
+    margin-top:14px;
+    padding:15px;
+}
+
+.history-title{
+    font-weight:800;
+    margin-bottom:10px;
+}
+
+.history-digits{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+}
+
+.history-digit{
+    width:27px;
+    height:27px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:#101f28;
+    border:1px solid #1c3541;
+    border-radius:5px;
+
+    font-size:11px;
+    font-weight:800;
+}
+
+.history-digit.latest{
+    color:#06140f;
+    background:var(--green);
+}
+
+/* RIGHT PANEL */
+
+.card{
+    padding:15px;
+}
+
+.card + .card{
+    margin-top:13px;
+}
+
+.card-title{
+    font-size:14px;
+    font-weight:900;
+    margin-bottom:13px;
+}
+
+.mode{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+}
+
+.mode button{
+    border:1px solid var(--border);
+    background:#07131b;
+    color:#8499a5;
+    padding:10px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.mode button.active{
+    background:#12372f;
+    color:#fff;
+    border-color:var(--green);
+}
+
+.field{
+    margin-top:12px;
+}
+
+.label{
+    display:block;
+    color:var(--muted);
+    font-size:10px;
+    margin-bottom:5px;
+}
+
+.field select,
+.field input{
+    width:100%;
+}
+
+.contracts{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+}
+
+.contract{
+    padding:9px;
+    border-radius:6px;
+    background:#07131b;
+    color:#8196a2;
+    border:1px solid var(--border);
+    cursor:pointer;
+}
+
+.contract.active{
+    color:#fff;
+    border-color:var(--green);
+    background:#12352f;
+}
+
+.buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    margin-top:13px;
+}
+
+.action{
+    border:0;
+    padding:12px;
+    border-radius:6px;
+    color:#fff;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.green{
+    background:#087c60;
+}
+
+.red{
+    background:#9b3042;
+}
+
+.blue{
+    background:#315fa9;
+}
+
+.darkred{
+    background:#702b38;
+}
+
+/* STATISTICS */
+
+.stats{
+    display:grid;
+    grid-template-columns:
+        repeat(3,1fr);
+    gap:6px;
+}
+
+.stat{
+    background:#07131b;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:10px;
+    text-align:center;
+}
+
+.stat-value{
+    font-size:16px;
+    font-weight:900;
+}
+
+.stat-label{
+    color:var(--muted);
+    font-size:9px;
+}
+
+/* SIGNAL */
+
+.signal{
+    padding:12px;
+    border-radius:7px;
+    background:#07131b;
+    border:1px solid var(--border);
+}
+
+.signal strong{
+    color:var(--green);
+}
+
+/* MOBILE */
+
+@media(max-width:950px){
+
+    .app{
+        grid-template-columns:1fr;
+    }
+
+    .sidebar{
+        display:none;
+    }
+
+    .workspace{
+        grid-template-columns:1fr;
+    }
+
+}
+
+@media(max-width:650px){
+
+    .workspace{
+        padding:9px;
+    }
+
+    .header{
+        padding:0 10px;
+    }
+
+    .digit-grid{
+        grid-template-columns:
+            repeat(5,1fr);
+        row-gap:15px;
+    }
+
+    .cursor-line{
+        display:none;
+    }
+
+    .circle{
+        width:58px;
+        height:58px;
+    }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar">
+
+<div class="logo">
+Digit<span>Scope</span>
+</div>
+
+
+<div class="nav">
+
+<button class="active">
+▦ Workspace
+</button>
+
+<button>
+◉ Digit Analyzer
+</button>
+
+<button>
+◈ Manual Trading
+</button>
+
+<button>
+⚙ Bot Studio
+</button>
+
+<button>
+◷ Trade History
+</button>
+
+<button>
+▤ Statistics
+</button>
+
+</div>
+
+
+<div class="sidebar-note">
+
+LIVE DIGIT FREQUENCY
+
+The analyzer calculates the
+frequency of the last digit
+from the current rolling sample.
+
+Highest frequency is green.
+Lowest frequency is red.
+
+</div>
+
+</aside>
+
+
+
+<main class="main">
+
+
+<!-- HEADER -->
+
+<header class="header">
+
+<div class="header-title">
+Digits Market Workspace
+</div>
+
+
+<div class="connection">
+
+<span
+id="connectionDot"
+class="connection-dot">
+</span>
+
+<span id="connectionText">
+Connecting to Deriv...
+</span>
+
+</div>
+
+</header>
+
+
+
+<section class="workspace">
+
+
+<!-- LEFT COLUMN -->
+
+<div>
+
+
+<!-- CONTROLS -->
+
+<div class="panel panel-padding">
+
+<div class="controls">
+
+<select
+id="symbol">
+
+<option value="1HZ100V">
+Volatility 100 (1s)
+</option>
+
+<option value="1HZ75V">
+Volatility 75 (1s)
+</option>
+
+<option value="1HZ50V">
+Volatility 50 (1s)
+</option>
+
+<option value="1HZ25V">
+Volatility 25 (1s)
+</option>
+
+<option value="R_100">
+Volatility 100
+</option>
+
+<option value="R_75">
+Volatility 75
+</option>
+
+<option value="R_50">
+Volatility 50
+</option>
+
+</select>
+
+
+<select id="sampleSize">
+
+<option value="100">
+100 ticks
+</option>
+
+<option value="150">
+150 ticks
+</option>
+
+<option value="200" selected>
+200 ticks
+</option>
+
+<option value="500">
+500 ticks
+</option>
+
+</select>
+
+
+<button
+id="clear"
+class="control">
+
+Reset Analysis
+
+</button>
+
+</div>
+
+</div>
+
+
+
+<!-- PRICE -->
+
+<div class="panel market">
+
+<div class="market-head">
+
+<div>
+
+<strong id="marketName">
+Volatility 100 (1s)
+</strong>
+
+<div
+style="color:var(--muted);
+font-size:10px;
+margin-top:4px">
+
+LIVE DERIV TICK
+
+</div>
+
+</div>
+
+
+<div
+id="price"
+class="price">
+
+—
+
+</div>
+
+</div>
+
+
+<canvas
+id="chart"
+class="canvas">
+</canvas>
+
+</div>
+
+
+
+<!-- DIGIT ANALYZER -->
+
+<div class="panel analyzer">
+
+
+<div class="analyzer-header">
+
+<div>
+
+<div class="title">
+Digit Frequency Analysis
+</div>
+
+<div class="subtitle">
+Rolling percentage of last digits
+</div>
+
+</div>
+
+
+<div
+class="sample"
+id="sampleText">
+
+0 / 200 ticks
+
+</div>
+
+</div>
+
+
+
+<!-- DIGIT CIRCLES -->
+
+<div
+id="digitGrid"
+class="digit-grid">
+
+</div>
+
+
+<!-- FREQUENCY SCALE -->
+
+<div class="frequency-bar">
+
+<div
+id="frequencyFill"
+class="frequency-fill">
+</div>
+
+</div>
+
+
+<div
+style="
+display:flex;
+justify-content:space-between;
+font-size:9px;
+color:var(--muted);
+margin-top:5px">
+
+<span>
+LOWEST FREQUENCY
+</span>
+
+<span>
+HIGHEST FREQUENCY
+</span>
+
+</div>
+
+
+</div>
+
+
+
+<!-- RECENT DIGITS -->
+
+<div class="panel history">
+
+<div class="history-title">
+Recent Digit Stream
+</div>
+
+
+<div
+id="history"
+class="history-digits">
+</div>
+
+</div>
+
+
+
+<!-- STATS -->
+
+<div
+class="panel card">
+
+<div class="card-title">
+Analysis Statistics
+</div>
+
+
+<div class="stats">
+
+
+<div class="stat">
+
+<div
+id="totalTicks"
+class="stat-value">
+
+0
+
+</div>
+
+<div class="stat-label">
+TICKS
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div
+id="highestDigit"
+class="stat-value">
+—
+
+</div>
+
+<div class="stat-label">
+MOST FREQUENT
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div
+id="lowestDigit"
+class="stat-value">
+—
+
+</div>
+
+<div class="stat-label">
+LEAST FREQUENT
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- RIGHT COLUMN -->
+
+<aside>
+
+
+<!-- TRADING -->
+
+<div class="panel card">
+
+<div class="card-title">
+Manual / Bot
+</div>
+
+
+<div class="mode">
+
+<button
+id="manualMode"
+class="active">
+
+MANUAL
+
+</button>
+
+
+<button
+id="botMode">
+
+BOT
+
+</button>
+
+</div>
+
+
+
+<div class="field">
+
+<label class="label">
+DIGIT CONTRACT
+</label>
+
+
+<div class="contracts">
+
+
+<button
+class="contract active"
+data-contract="DIGITMATCH">
+
+MATCH
+
+</button>
+
+
+<button
+class="contract"
+data-contract="DIGITDIFF">
+
+DIFFER
+
+</button>
+
+
+<button
+class="contract"
+data-contract="DIGITOVER">
+
+OVER
+
+</button>
+
+
+<button
+class="contract"
+data-contract="DIGITUNDER">
+
+UNDER
+
+</button>
+
+
+<button
+class="contract"
+data-contract="DIGITODD">
+
+ODD
+
+</button>
+
+
+<button
+class="contract"
+data-contract="DIGITEVEN">
+
+EVEN
+
+</button>
+
+</div>
+
+</div>
+
+
+
+<div class="field">
+
+<label class="label">
+SELECTED DIGIT
+</label>
+
+
+<select id="selectedDigit">
+
+<option>0</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+
+</select>
+
+</div>
+
+
+
+<div class="field">
+
+<label class="label">
+STAKE
+
+</label>
+
+
+<input
+id="stake"
+type="number"
+value="1"
+min="0.35"
+step="0.01">
+
+</div>
+
+
+
+<div class="buttons">
+
+
+<button
+id="buyUp"
+class="action green">
+
+BUY
+
+</button>
+
+
+<button
+id="buyDown"
+class="action red">
+
+SELL
+
+</button>
+
+
+<button
+id="startBot"
+class="action blue">
+
+START BOT
+
+</button>
+
+
+<button
+id="stopBot"
+class="action darkred">
+
+STOP BOT
+
+</button>
+
+</div>
+
+
+<div
+style="
+margin-top:10px;
+font-size:10px;
+color:var(--muted)">
+
+Trading buttons are analysis controls
+until an authenticated Deriv account
+is connected.
+
+</div>
+
+</div>
+
+
+
+<!-- SIGNAL -->
+
+<div class="panel card">
+
+<div class="card-title">
+Frequency Signal
+</div>
+
+
+<div class="signal">
+
+<div
+id="signalText">
+
+Waiting for enough ticks...
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- BOT -->
+
+<div class="panel card">
+
+<div class="card-title">
+Bot Cycle
+</div>
+
+
+<div class="field">
+
+<label class="label">
+BOT STRATEGY
+</label>
+
+
+<select id="botStrategy">
+
+<option value="sequential">
+Sequential 0 → 9
+</option>
+
+<option value="reverse">
+Reverse 9 → 0
+</option>
+
+<option value="highest">
+Follow highest frequency
+</option>
+
+<option value="lowest">
+Follow lowest frequency
+</option>
+
+<option value="random">
+Random
+</option>
+
+</select>
+
+</div>
+
+
+<div class="field">
+
+<label class="label">
+BOT INTERVAL
+</label>
+
+
+<select id="botInterval">
+
+<option value="1">
+Every tick
+</option>
+
+<option value="2">
+Every 2 ticks
+</option>
+
+<option value="3">
+Every 3 ticks
+</option>
+
+<option value="5">
+Every 5 ticks
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+</aside>
+
+
+</section>
+
+</main>
+
+</div>
+
+
+
+<script>
+
+/*
+=========================================================
+DIGITSCOPE
+DERIV LIVE DIGIT FREQUENCY ANALYZER
+=========================================================
+
+This version uses Deriv's current public market-data
+WebSocket.
+
+It does NOT pretend to authenticate an account.
+
+It calculates:
+- last digit
+- frequency
+- decimal percentage
+- highest digit
+- lowest digit
+- moving cursor
+=========================================================
+*/
+
+
+const DERIV_PUBLIC_WS =
+"wss://api.derivws.com/trading/v1/options/ws/public";
+
+
+let socket = null;
+
+let symbol =
+"1HZ100V";
+
+let sampleSize =
+200;
+
+let digits =
+[];
+
+let prices =
+[];
+
+let totalTicks =
+0;
+
+let botRunning =
+false;
+
+let botCounter =
+0;
+
+let selectedDigit =
+0;
+
+let selectedContract =
+"DIGITMATCH";
+
+
+
+/*
+=========================================================
+ELEMENTS
+=========================================================
+*/
+
+const $ =
+id =>
+document.getElementById(id);
+
+
+
+/*
+=========================================================
+CREATE DIGIT CIRCLES
+=========================================================
+*/
+
+function createDigitBoard(){
+
+    const grid =
+    $("digitGrid");
+
+    grid.innerHTML =
+    "";
+
+
+    for(
+        let i = 0;
+        i < 10;
+        i++
+    ){
+
+        const item =
+        document.createElement(
+            "div"
+        );
+
+        item.className =
+        "digit-item";
+
+        item.id =
+        "digitItem" + i;
+
+
+        item.innerHTML = `
+
+            <div
+                class="circle"
+                id="circle${i}">
+
+                <div
+                    class="number">
+
+                    ${i}
+
+                </div>
+
+                <div
+                    class="percentage"
+                    id="percentage${i}">
+
+                    0.00%
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        item.onclick =
+        function(){
+
+            selectedDigit =
+            i;
+
+            $("selectedDigit")
+            .value =
+            i;
+
+        };
+
+
+        grid.appendChild(
+            item
+        );
+
+    }
+
+
+    /*
+    Moving cursor.
+    */
+
+    const cursor =
+    document.createElement(
+        "div"
+    );
+
+    cursor.id =
+    "movingCursor";
+
+    cursor.className =
+    "cursor-line";
+
+
+    cursor.innerHTML = `
+
+        <div class="cursor-ring"></div>
+
+        <div class="cursor-dot"></div>
+
+    `;
+
+
+    grid.appendChild(
+        cursor
+    );
+
+}
+
+
+
+/*
+=========================================================
+CONNECT TO DERIV
+=========================================================
+*/
+
+function connect(){
+
+    if(socket){
+
+        try{
+            socket.close();
+        }
+        catch(error){}
+
+    }
+
+
+    $("connectionText")
+    .textContent =
+    "Connecting to Deriv...";
+
+
+    $("connectionDot")
+    .classList.remove(
+        "online"
+    );
+
+
+    socket =
+    new WebSocket(
+        DERIV_PUBLIC_WS
+    );
+
+
+    socket.onopen =
+    function(){
+
+        $("connectionText")
+        .textContent =
+        "Deriv market connected";
+
+
+        $("connectionDot")
+        .classList.add(
+            "online"
+        );
+
+
+        /*
+        Request tick history.
+        */
+
+        socket.send(
+            JSON.stringify({
+
+                ticks_history:
+                symbol,
+
+                count:
+                sampleSize,
+
+                end:
+                "latest",
+
+                style:
+                "ticks",
+
+                req_id:
+                1
+
+            })
+        );
+
+
+        /*
+        Subscribe to live ticks.
+        */
+
+        socket.send(
+            JSON.stringify({
+
+                ticks:
+                symbol,
+
+                subscribe:
+                1,
+
+                req_id:
+                2
+
+            })
+        );
+
+    };
+
+
+    socket.onerror =
+    function(){
+
+        $("connectionText")
+        .textContent =
+        "Deriv connection error";
+
+
+        $("connectionDot")
+        .classList.remove(
+            "online"
+        );
+
+    };
+
+
+    socket.onclose =
+    function(){
+
+        $("connectionText")
+        .textContent =
+        "Deriv disconnected";
+
+
+        $("connectionDot")
+        .classList.remove(
+            "online"
+        );
+
+    };
+
+
+    socket.onmessage =
+    function(event){
+
+        let data;
+
+        try{
+
+            data =
+            JSON.parse(
+                event.data
+            );
+
+        }
+        catch(error){
+
+            return;
+
+        }
+
+
+        /*
+        History.
+        */
+
+        if(
+            data.msg_type ===
+            "history"
+        ){
+
+            if(
+                data.history &&
+                Array.isArray(
+                    data.history.prices
+                )
+            ){
+
+                prices =
+                data.history.prices
+                .map(Number);
+
+
+                /*
+                Build historical
+                digit sample.
+                */
+
+                digits =
+                prices
+                .map(
+                    price =>
+                    getLastDigit(
+                        price
+                    )
+                )
+                .slice(
+                    -sampleSize
+                );
+
+
+                totalTicks =
+                digits.length;
+
+
+                updateAll();
+
+            }
+
+        }
+
+
+        /*
+        Live tick.
+        */
+
+        if(
+            data.msg_type ===
+            "tick"
+        ){
+
+            if(
+                data.tick &&
+                data.tick.quote !== undefined
+            ){
+
+                processTick(
+                    data.tick
+                );
+
+            }
+
+        }
+
+    };
+
+}
+
+
+
+/*
+=========================================================
+GET LAST DIGIT
+=========================================================
+*/
+
+function getLastDigit(
+    quote
+){
+
+    /*
+    Convert the quote to a string.
+
+    This handles decimal quotes without
+    depending on pip_size, which is no
+    longer guaranteed by Deriv's new
+    tick response.
+    */
+
+
+    const string =
+    String(quote);
+
+
+    /*
+    Scientific notation fallback.
+    */
+
+    if(
+        string.includes("e")
+    ){
+
+        const fixed =
+        Number(quote)
+        .toFixed(8);
+
+        return Number(
+            fixed
+            .replace(
+                ".",
+                ""
+            )
+            .slice(-1)
+        );
+
+    }
+
+
+    const clean =
+    string.replace(
+        /[^0-9]/g,
+        ""
+    );
+
+
+    return Number(
+        clean[
+            clean.length - 1
+        ]
+    );
+
+}
+
+
+
+/*
+=========================================================
+PROCESS LIVE TICK
+=========================================================
+*/
+
+function processTick(
+    tick
+){
+
+    const quote =
+    Number(
+        tick.quote
+    );
+
+
+    if(
+        !Number.isFinite(
+            quote
+        )
+    )
+    return;
+
+
+    const digit =
+    getLastDigit(
+        quote
+    );
+
+
+    prices.push(
+        quote
+    );
+
+
+    digits.push(
+        digit
+    );
+
+
+    /*
+    Keep only requested
+    rolling sample.
+    */
+
+    if(
+        digits.length >
+        sampleSize
+    ){
+
+        digits.shift();
+
+    }
+
+
+    if(
+        prices.length >
+        sampleSize
+    ){
+
+        prices.shift();
+
+    }
+
+
+    totalTicks++;
+
+
+    $("price")
+    .textContent =
+    quote;
+
+
+    updateAll();
+
+
+    /*
+    Bot cycle.
+    */
+
+    if(
+        botRunning
+    ){
+
+        const interval =
+        Number(
+            $("botInterval")
+            .value
+        );
+
+
+        if(
+            totalTicks %
+            interval ===
+            0
+        ){
+
+            botTick();
+
+        }
+
+    }
+
+}
+
+
+
+/*
+=========================================================
+CALCULATE FREQUENCIES
+=========================================================
+*/
+
+function calculateFrequencies(){
+
+    const counts =
+    Array(10)
+    .fill(0);
+
+
+    digits.forEach(
+        digit => {
+
+            if(
+                digit >= 0 &&
+                digit <= 9
+            ){
+
+                counts[digit]++;
+
+            }
+
+        }
+    );
+
+
+    const total =
+    digits.length;
+
+
+    const percentages =
+    counts.map(
+        count =>
+
+        total === 0
+        ? 0
+        : (
+            count /
+            total
+        ) *
+        100
+
+    );
+
+
+    return {
+        counts,
+        percentages
+    };
+
+}
+
+
+
+/*
+=========================================================
+UPDATE DIGIT DISPLAY
+=========================================================
+*/
+
+function updateDigitDisplay(){
+
+    const result =
+    calculateFrequencies();
+
+
+    const percentages =
+    result.percentages;
+
+
+    if(
+        digits.length === 0
+    )
+    return;
+
+
+    let highest =
+    0;
+
+    let lowest =
+    0;
+
+
+    for(
+        let i = 1;
+        i < 10;
+        i++
+    ){
+
+        if(
+            percentages[i] >
+            percentages[highest]
+        ){
+
+            highest =
+            i;
+
+        }
+
+
+        if(
+            percentages[i] <
+            percentages[lowest]
+        ){
+
+            lowest =
+            i;
+
+        }
+
+    }
+
+
+    /*
+    Remove previous
+    classes.
+    */
+
+    for(
+        let i = 0;
+        i < 10;
+        i++
+    ){
+
+        const item =
+        $("digitItem" + i);
+
+
+        item.classList.remove(
+            "most",
+            "least",
+            "middle"
+        );
+
+
+        const percentage =
+        percentages[i];
+
+
+        $("percentage" + i)
+        .textContent =
+        percentage.toFixed(2)
+        + "%";
+
+
+        /*
+        Color based on relative
+        frequency.
+
+        Highest = green
+        Lowest = red
+        Middle = neutral.
+        */
+
+        if(
+            i === highest
+        ){
+
+            item.classList.add(
+                "most"
+            );
+
+        }
+
+        else if(
+            i === lowest
+        ){
+
+            item.classList.add(
+                "least"
+            );
+
+        }
+
+        else{
+
+            item.classList.add(
+                "middle"
+            );
+
+        }
+
+    }
+
+
+    $("highestDigit")
+    .textContent =
+    highest;
+
+
+    $("lowestDigit")
+    .textContent =
+    lowest;
+
+
+    $("sampleText")
+    .textContent =
+    digits.length +
+    " / " +
+    sampleSize +
+    " ticks";
+
+
+    /*
+    Frequency scale.
+    */
+
+    const spread =
+    percentages[highest] -
+    percentages[lowest];
+
+
+    const fill =
+    Math.min(
+        100,
+        Math.max(
+            0,
+            spread * 10
+        )
+    );
+
+
+    $("frequencyFill")
+    .style.width =
+    fill + "%";
+
+
+    /*
+    Signal.
+    */
+
+    $("signalText")
+    .innerHTML =
+
+        "Most frequent digit: "
+        +
+        "<strong>"
+        +
+        highest
+        +
+        "</strong>"
+        +
+        " at "
+        +
+        percentages[highest]
+        .toFixed(2)
+        +
+        "%. "
+        +
+        "Least frequent: "
+        +
+        "<strong>"
+        +
+        lowest
+        +
+        "</strong>"
+        +
+        " at "
+        +
+        percentages[lowest]
+        .toFixed(2)
+        +
+        "%.";
+
+}
+
+
+
+/*
+=========================================================
+MOVE CURSOR
+=========================================================
+*/
+
+function moveCursor(){
+
+    if(
+        digits.length === 0
+    )
+    return;
+
+
+    /*
+    Last observed digit.
+    */
+
+    const latest =
+    digits[
+        digits.length - 1
+    ];
+
+
+    const grid =
+    $("digitGrid");
+
+
+    const target =
+    $("circle" + latest);
+
+
+    const cursor =
+    $("movingCursor");
+
+
+    if(
+        !target ||
+        !cursor
+    )
+    return;
+
+
+    const gridRect =
+    grid.getBoundingClientRect();
+
+
+    const targetRect =
+    target.getBoundingClientRect();
+
+
+    /*
+    Put cursor directly over
+    the current digit circle.
+    */
+
+    const left =
+    targetRect.left -
+    gridRect.left +
+    targetRect.width / 2 -
+    32;
+
+
+    cursor.style.left =
+    left + "px";
+
+}
+
+
+
+/*
+=========================================================
+RECENT DIGIT STREAM
+=========================================================
+*/
+
+function updateHistory(){
+
+    const container =
+    $("history");
+
+
+    container.innerHTML =
+    "";
+
+
+    digits
+    .slice(
+        -50
+    )
+    .reverse()
+    .forEach(
+        function(
+            digit,
+            index
+        ){
+
+            const span =
+            document.createElement(
+                "div"
+            );
+
+
+            span.className =
+            "history-digit";
+
+
+            if(
+                index === 0
+            ){
+
+                span.classList.add(
+                    "latest"
+                );
+
+            }
+
+
+            span.textContent =
+            digit;
+
+
+            container.appendChild(
+                span
+            );
+
+        }
+    );
+
+}
+
+
+
+/*
+=========================================================
+UPDATE ALL
+=========================================================
+*/
+
+function updateAll(){
+
+    updateDigitDisplay();
+
+    updateHistory();
+
+    moveCursor();
+
+    drawChart();
+
+    $("totalTicks")
+    .textContent =
+    digits.length;
+
+}
+
+
+
+/*
+=========================================================
+CHART
+=========================================================
+*/
+
+function drawChart(){
+
+    const canvas =
+    $("chart");
+
+
+    const rect =
+    canvas.getBoundingClientRect();
+
+
+    const ratio =
+    window.devicePixelRatio ||
+    1;
+
+
+    canvas.width =
+    rect.width *
+    ratio;
+
+
+    canvas.height =
+    rect.height *
+    ratio;
+
+
+    const ctx =
+    canvas.getContext(
+        "2d"
+    );
+
+
+    ctx.scale(
+        ratio,
+        ratio
+    );
+
+
+    const width =
+    rect.width;
+
+
+    const height =
+    rect.height;
+
+
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    if(
+        prices.length < 2
+    )
+    return;
+
+
+    const min =
+    Math.min(
+        ...prices
+    );
+
+
+    const max =
+    Math.max(
+        ...prices
+    );
+
+
+    const range =
+    max -
+    min ||
+    1;
+
+
+    /*
+    Grid.
+    */
+
+    ctx.strokeStyle =
+    "#142934";
+
+
+    for(
+        let i = 1;
+        i < 5;
+        i++
+    ){
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            0,
+            i *
+            height /
+            5
+        );
+
+        ctx.lineTo(
+            width,
+            i *
+            height /
+            5
+        );
+
+        ctx.stroke();
+
+    }
+
+
+    /*
+    Price line.
+    */
+
+    ctx.strokeStyle =
+    "#18e39d";
+
+    ctx.lineWidth =
+    2;
+
+
+    ctx.beginPath();
+
+
+    prices.forEach(
+        function(
+            price,
+            index
+        ){
+
+            const x =
+            10 +
+            index *
+            (
+                width -
+                20
+            ) /
+            (
+                prices.length -
+                1
+            );
+
+
+            const y =
+            10 +
+            (
+                max -
+                price
+            )
+            /
+            range
+            *
+            (
+                height -
+                20
+            );
+
+
+            if(
+                index === 0
+            ){
+
+                ctx.moveTo(
+                    x,
+                    y
+                );
+
+            }
+            else{
+
+                ctx.lineTo(
+                    x,
+                    y
+                );
+
+            }
+
+        }
+    );
+
+
+    ctx.stroke();
+
+}
+
+
+
+/*
+=========================================================
+SYMBOL CHANGE
+=========================================================
+*/
+
+$("symbol")
+.addEventListener(
+    "change",
+    function(){
+
+        symbol =
+        this.value;
+
+
+        $("marketName")
+        .textContent =
+        this.options[
+            this.selectedIndex
+        ].text;
+
+
+        digits =
+        [];
+
+        prices =
+        [];
+
+        totalTicks =
+        0;
+
+
+        connect();
+
+    }
+);
+
+
+
+/*
+=========================================================
+SAMPLE SIZE
+=========================================================
+*/
+
+$("sampleSize")
+.addEventListener(
+    "change",
+    function(){
+
+        sampleSize =
+        Number(
+            this.value
+        );
+
+
+        digits =
+        digits.slice(
+            -sampleSize
+        );
+
+
+        prices =
+        prices.slice(
+            -sampleSize
+        );
+
+
+        updateAll();
+
+        connect();
+
+    }
+);
+
+
+
+/*
+=========================================================
+RESET
+=========================================================
+*/
+
+$("clear")
+.onclick =
+function(){
+
+    digits =
+    [];
+
+    prices =
+    [];
+
+    totalTicks =
+    0;
+
+    botCounter =
+    0;
+
+
+    updateAll();
+
+    connect();
+
+};
+
+
+
+/*
+=========================================================
+SELECTED DIGIT
+=========================================================
+*/
+
+$("selectedDigit")
+.addEventListener(
+    "change",
+    function(){
+
+        selectedDigit =
+        Number(
+            this.value
+        );
+
+    }
+);
+
+
+
+/*
+=========================================================
+CONTRACT BUTTONS
+=========================================================
+*/
+
+document
+.querySelectorAll(
+    ".contract"
+)
+.forEach(
+    button => {
+
+        button.onclick =
+        function(){
+
+            document
+            .querySelectorAll(
+                ".contract"
+            )
+            .forEach(
+                b =>
+                b.classList.remove(
+                    "active"
+                )
+            );
+
+
+            this.classList.add(
+                "active"
+            );
+
+
+            selectedContract =
+            this.dataset.contract;
+
+        };
+
+    }
+);
+
+
+
+/*
+=========================================================
+MANUAL / BOT
+=========================================================
+*/
+
+$("manualMode")
+.onclick =
+function(){
+
+    $("manualMode")
+    .classList.add(
+        "active"
+    );
+
+
+    $("botMode")
+    .classList.remove(
+        "active"
+    );
+
+};
+
+
+$("botMode")
+.onclick =
+function(){
+
+    $("botMode")
+    .classList.add(
+        "active"
+    );
+
+
+    $("manualMode")
+    .classList.remove(
+        "active"
+    );
+
+};
+
+
+
+/*
+=========================================================
+BOT
+=========================================================
+*/
+
+function botTick(){
+
+    const strategy =
+    $("botStrategy")
+    .value;
+
+
+    const result =
+    calculateFrequencies();
+
+
+    let digit;
+
+
+    if(
+        strategy ===
+        "sequential"
+    ){
+
+        digit =
+        botCounter %
+        10;
+
+    }
+
+
+    else if(
+        strategy ===
+        "reverse"
+    ){
+
+        digit =
+        9 -
+        (
+            botCounter %
+            10
+        );
+
+    }
+
+
+    else if(
+        strategy ===
+        "highest"
+    ){
+
+        digit =
+        result.percentages
+        .indexOf(
+            Math.max(
+                ...result.percentages
+            )
+        );
+
+    }
+
+
+    else if(
+        strategy ===
+        "lowest"
+    ){
+
+        digit =
+        result.percentages
+        .indexOf(
+            Math.min(
+                ...result.percentages
+            )
+        );
+
+    }
+
+
+    else{
+
+        digit =
+        Math.floor(
+            Math.random() * 10
+        );
+
+    }
+
+
+    botCounter++;
+
+
+    selectedDigit =
+    digit;
+
+
+    $("selectedDigit")
+    .value =
+    digit;
+
+}
+
+
+
+/*
+=========================================================
+BUTTONS
+=========================================================
+*/
+
+$("startBot")
+.onclick =
+function(){
+
+    botRunning =
+    true;
+
+};
+
+
+$("stopBot")
+.onclick =
+function(){
+
+    botRunning =
+    false;
+
+};
+
+
+
+/*
+These are intentionally analysis-only.
+
+Actual Deriv trading requires an
+authenticated trading WebSocket.
+*/
+
+$("buyUp")
+.onclick =
+function(){
+
+    alert(
+        "Analysis selected digit: "
+        +
+        selectedDigit
+        +
+        "\nContract: "
+        +
+        selectedContract
+        +
+        "\n\nConnect an authenticated Deriv trading session before sending a real BUY request."
+    );
+
+};
+
+
+$("buyDown")
+.onclick =
+function(){
+
+    alert(
+        "Analysis selected digit: "
+        +
+        selectedDigit
+        +
+        "\nContract: "
+        +
+        selectedContract
+        +
+        "\n\nConnect an authenticated Deriv trading session before sending a real SELL/BUY request."
+    );
+
+};
+
+
+
+/*
+=========================================================
+RESIZE
+=========================================================
+*/
+
+window
+.addEventListener(
+    "resize",
+    function(){
+
+        drawChart();
+
+        moveCursor();
+
+    }
+);
+
+
+
+/*
+=========================================================
+START
+=========================================================
+*/
+
+createDigitBoard();
+
+connect();
+
+</script>
+
+</body>
+</html>
